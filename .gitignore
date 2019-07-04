@@ -1,0 +1,5 @@
+csv_data/*.csv
+xml_data/*.xml
+.ipynb_checkpoints
+.env
+.idea
