@@ -7,7 +7,7 @@ Data source: https://dumps.wikimedia.org/enwiki/20190620/
 
 For local development you can use any multistream part.
 
-Also, you can run `load_sample_data.sh` if you have wget and tar installed. 
+Also, you can run `load_sample_data.sh` if you have wget and bzip2 installed. 
 
 
 ### Setting up environment
