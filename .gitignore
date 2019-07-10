@@ -3,4 +3,5 @@ xml_data/*.xml
 .ipynb_checkpoints
 .env
 .idea
+.vscode
 .DS_Store
