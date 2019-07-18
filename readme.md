@@ -6,8 +6,24 @@
 Data source: https://dumps.wikimedia.org/enwiki/20190701/
 
 For local development you can use any multistream part.
+#### Full dataset
+Downloading full list of wiki dumps: run `./load_wiki_data_full.sh` from root project folder. 
 
-Also, you can run `load_sample_data.sh` if you have wget and bzip2 installed. 
+#### Subsample
+If you want to download only subsample edit `load_wiki_data_full.sh`:
+
+Replace:
+```
+cat data/parts.txt | while read bz_dump_name; do
+```
+With:
+```
+# 3 can be any number of dumps that you want. 
+# Also you can use head/tail or any bash filtering here.
+
+cat data/parts.txt | tail -n -3 | while read bz_dump_name; do
+```
+
 
 
 ### Setting up environment
