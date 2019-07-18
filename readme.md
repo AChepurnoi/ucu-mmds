@@ -3,7 +3,7 @@
 
 ### Loading Data
 
-Data source: https://dumps.wikimedia.org/enwiki/20190620/
+Data source: https://dumps.wikimedia.org/enwiki/20190701/
 
 For local development you can use any multistream part.
 
