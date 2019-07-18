@@ -5,7 +5,6 @@
 
 Data source: https://dumps.wikimedia.org/enwiki/20190701/
 
-For local development you can use any multistream part.
 #### Full dataset
 Downloading full list of wiki dumps: run `./load_wiki_data_full.sh` from root project folder. 
 
