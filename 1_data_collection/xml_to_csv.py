@@ -106,11 +106,14 @@ def process_dumps(xml_folder_path, output_path):
 
 
 if __name__ == "__main__":
-    XML_FOLDER = "data/xml"
-    OUTPUT = "data/csv"
-    process_dumps(XML_FOLDER, OUTPUT)
+    
+    XML_DIR = "data/xml"
+    CSV_DIR = "data/csv"
 
-# List all xml dumps
-# For each xml dump run:
-# - Parser with ores features
-# - Save result to csv folder
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--xml-dir", type=str, default=XML_DIR)
+    parser.add_argument("--csv-dir", type=str, default=CSV_DIR)
+    args = parser.parse_args()
+    
+    process_dumps(args.xml_dir, args.csv_dir)
