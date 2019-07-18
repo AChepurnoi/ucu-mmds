@@ -1,5 +1,5 @@
-csv_data/*.csv
-xml_data/*.xml
+data/
+notebooks_sandbox
 .ipynb_checkpoints
 .env
 .idea
