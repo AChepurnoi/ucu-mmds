@@ -4,6 +4,8 @@ from pyspark.sql.types import StringType, IntegerType
 from functools import reduce
 import re
 
+eps = 1e-8
+
 def rename_columns(df):
     for c in df.columns:
         if "revision." in c:
@@ -111,8 +113,8 @@ def count_paragraphs(df):
     pattern_filtering = '\n\n\{\{.*\}\}\n\n|\n\n\[\[.*\]\]\n\n|\n\n={1,7}.*={1,7}\n\n'
     # split by two enters
     pattern_splitting = '\n\n'
-    return df.withColumn('n_paragraphs', size(split(regexp_replace(col('text'), 
-                                                                   pattern_filtering, ''), 
+    return df.withColumn('n_paragraphs', size(split(regexp_replace(col('text'),
+                                                                   pattern_filtering, ''),
                                                     pattern_splitting))-1)
 
 def count_unreferenced(df):
@@ -129,7 +131,7 @@ def count_categories(df):
         [[:Category:Category name]]
         [[:File:File name]]
     """
-    pattern = '\[\[:?Category:[a-zA-Z0-9.,\-!?\(\) ]+\]\]'    
+    pattern = '\[\[:?Category:[a-zA-Z0-9.,\-!?\(\) ]+\]\]'
     return df.withColumn('n_categories', size(split(col('text'), pattern))-1)
 
 
@@ -151,8 +153,14 @@ def extract_features(df_features, filter=True):
     # citation counter ver1
     book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
     journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
-    df_features = df_features.withColumn("book_citations", book_citations_count("text"))\
-                    .withColumn("journal_citations", journal_citations_count("text"))
+    web_citations_count = UserDefinedFunction(citation_counter("web"), IntegerType())
+    news_citations_count = UserDefinedFunction(citation_counter("news"), IntegerType())
+
+    df_features = df_features\
+                    .withColumn("book_citations", book_citations_count("text"))\
+                    .withColumn("journal_citations", journal_citations_count("text"))\
+                    .withColumn("web_citations", web_citations_count("text"))\
+                    .withColumn("news_citations", news_citations_count("text"))
 
     # citation counter ver2
     # df_features = citation_counter2("book")(df_features)
@@ -161,18 +169,24 @@ def extract_features(df_features, filter=True):
     df_features = count_internal_links(df_features)
     df_features = count_external_links(df_features)
     df_features = count_paragraphs(df_features)
+
+    df_features = df_features.withColumn("average_internal_links", (col("n_internal_links")  / (col("n_paragraphs") + eps)))
+    df_features = df_features.withColumn("average_external_links", (col("n_external_links")  / (col("n_paragraphs") + eps)))
+
     df_features = count_unreferenced(df_features)
     df_features = count_categories(df_features)
     df_features = count_of_images(df_features)
 
     if filter:
-        features_names = ['Stub', 'Start', 'C', 'B', 'GA', 'FA',
+        features_names = ['title',
+                        'Stub', 'Start', 'C', 'B', 'GA', 'FA',
                         'n_words', 'n_internal_links', 'n_external_links',
                         'level2', 'level3', 'level4', 'level5', 'level6',
-                        'book_citations', 'journal_citations',
+                        'book_citations', 'journal_citations', 'web_citations', 'news_citations',
+                        'average_external_links', 'average_internal_links',
                         'n_paragraphs', 'n_unreferenced', 'n_categories', 'n_images']
 
-        df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x], 
+        df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x],
                                                 features_names)))
 
         for feature in features_names:
