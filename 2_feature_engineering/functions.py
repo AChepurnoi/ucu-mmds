@@ -57,7 +57,7 @@ def citation_counter(citation_source):
         {{cite {journal}(.*?)}}
     """
     def _count_citations(text):
-        matches = re.findall(f"{{cite {citation_source}(.*?)}}", text, re.IGNORECASE)
+        matches = re.findall(f"{{cite {citation_source}(.*?)}}", str(text), re.IGNORECASE)
         return len(matches)
     return _count_citations
 
@@ -149,14 +149,14 @@ def extract_features(df_features, filter=True):
     df_features = count_headings(df_features)
 
     # citation counter ver1
-    # book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
-    # journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
-    # df_features = df_features.withColumn("book_citations", book_citations_count("text"))\
-    #                 .withColumn("journal_citations", journal_citations_count("text"))
+    book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
+    journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
+    df_features = df_features.withColumn("book_citations", book_citations_count("text"))\
+                    .withColumn("journal_citations", journal_citations_count("text"))
 
     # citation counter ver2
-    df_features = citation_counter2("book")(df_features)
-    df_features = citation_counter2("journal")(df_features)
+    # df_features = citation_counter2("book")(df_features)
+    # df_features = citation_counter2("journal")(df_features)
 
     df_features = count_internal_links(df_features)
     df_features = count_external_links(df_features)
