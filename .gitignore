@@ -1,5 +1,5 @@
-data/csv
-data/xml
+data/
+sample_data/
 notebooks_sandbox
 .ipynb_checkpoints
 .env
