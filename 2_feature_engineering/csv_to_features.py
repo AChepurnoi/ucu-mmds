@@ -16,7 +16,10 @@ from functions import *
 CSV_DIR = "../data/csv"
 DATE = "20190701"
 
-def main(csv_dir, date):
+def filter_articles():
+    pass
+
+def csv_to_features(csv_dir, date):
     df_paths = glob(os.path.join(csv_dir, "enwiki-{}-pages-articles-multistream*_raw.csv".format(DATE)))
     df = spark.read.csv(df_paths, inferSchema=True, header=True, multiLine=True, escape='"')
     for c in df.columns:
