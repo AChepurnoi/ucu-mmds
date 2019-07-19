@@ -1,19 +1,14 @@
-import os
-import findspark
-try:
-    findspark.init()
-except:
-    PYSPARK_PATH = '../spark/spark-2.4.3-bin-hadoop2.7/' # change path to yours
-    findspark.init(PYSPARK_PATH)
-import pyspark
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.getOrCreate()
-
 from pyspark.sql import *
 from pyspark.sql.functions import col, lower, regexp_replace, split, size, UserDefinedFunction
 from pyspark.sql.types import StringType, IntegerType
 from functools import reduce
 import re
+
+def rename_columns(df):
+    for c in df.columns:
+        if "revision." in c:
+            df = df.withColumnRenamed(c, c[len("revision."):])
+    return df
 
 def filter_columns(df, print_columns=False):
     """Columns filtering
@@ -64,6 +59,18 @@ def citation_counter(citation_source):
     def _count_citations(text):
         matches = re.findall(f"{{cite {citation_source}(.*?)}}", text, re.IGNORECASE)
         return len(matches)
+    return _count_citations
+
+def citation_counter2(citation_source):
+    """Citation counting
+    Syntaxis:
+        {{cite {book}(.*?)}}
+        {{cite {journal}(.*?)}}
+    """
+    def _count_citations(df):
+        pattern = "\{cite "+citation_source+"(.*?)\}"
+        return df.withColumn("{}_citations".format(citation_source),\
+                size(split(col('text'), pattern=pattern))-1)
     return _count_citations
 
 def count_internal_links(df):
@@ -135,3 +142,40 @@ def count_of_images(df):
     return df.withColumn("n_images", size(split(col('text'), pattern=pattern))-1)
 
 
+def extract_features(df_features, filter=True):
+    df_features = filter_columns(rename_columns(df_features))
+
+    df_features = words_counts(df_features)
+    df_features = count_headings(df_features)
+
+    # citation counter ver1
+    # book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
+    # journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
+    # df_features = df_features.withColumn("book_citations", book_citations_count("text"))\
+    #                 .withColumn("journal_citations", journal_citations_count("text"))
+
+    # citation counter ver2
+    df_features = citation_counter2("book")(df_features)
+    df_features = citation_counter2("journal")(df_features)
+
+    df_features = count_internal_links(df_features)
+    df_features = count_external_links(df_features)
+    df_features = count_paragraphs(df_features)
+    df_features = count_unreferenced(df_features)
+    df_features = count_categories(df_features)
+    df_features = count_of_images(df_features)
+
+    if filter:
+        features_names = ['Stub', 'Start', 'C', 'B', 'GA', 'FA',
+                        'n_words', 'n_internal_links', 'n_external_links',
+                        'level2', 'level3', 'level4', 'level5', 'level6',
+                        'book_citations', 'journal_citations',
+                        'n_paragraphs', 'n_unreferenced', 'n_categories', 'n_images']
+
+        df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x], 
+                                                features_names)))
+
+        for feature in features_names:
+            df_features = df_features.filter(df_features[feature].isNotNull())
+
+    return df_features

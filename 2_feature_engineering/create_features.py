@@ -1,6 +1,5 @@
 import os
 from glob import glob
-import numpy as np
 
 import findspark
 try:
@@ -11,7 +10,6 @@ except:
 import pyspark
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
-from pyspark.sql.functions import UserDefinedFunction
 
 from functions import *
 
@@ -21,38 +19,21 @@ DATE = "20190701"
 def main(csv_dir, date):
     df_paths = glob(os.path.join(csv_dir, "enwiki-{}-pages-articles-multistream*_raw.csv".format(DATE)))
     df = spark.read.csv(df_paths, inferSchema=True, header=True, multiLine=True, escape='"')
+    for c in df.columns:
+        if "revision." in c:
+            df = df.withColumnRenamed(c, c[len("revision."):])
     df_features = filter_columns(df)
     df_features.printSchema()
     print("Size of the DataFrame: {} records".format(df_features.count()))
 
-    df_features = words_counts(df_features)
-
-    df_features = count_headings(df_features)
-
-    book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
-    journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
-    df_features = df_features.withColumn("book_citations", book_citations_count("text"))\
-    .withColumn("journal_citations", journal_citations_count("text"))
-
-    df_features = count_internal_links(df_features)
-
-    df_features = count_external_links(df_features)
-
-    df_features = count_paragraphs(df_features)
-
-    df_features = count_unreferenced(df_features)
-
-    df_features = count_categories(df_features)
-
-    df_features = count_of_images(df_features)
+    df_features = extract_features(df_features)
 
     features_names = ['title',
                     'Stub', 'Start', 'C', 'B', 'GA', 'FA',
                     'n_words', 'n_internal_links', 'n_external_links',
                     'level2', 'level3', 'level4', 'level5', 'level6',
                     'book_citations', 'journal_citations',
-                    'n_paragraphs', 'n_unreferenced', 'n_categories', 'n_images'
-                    ]
+                    'n_paragraphs', 'n_unreferenced', 'n_categories', 'n_images']
 
     df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x], 
                                             features_names)))
