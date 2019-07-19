@@ -70,13 +70,14 @@ class XMLDumpPageParser(object):
 
 class PageDataORESLoader(object):
 
-    def __init__(self, pages_df, lang="en"):
+    def __init__(self, pages_df, lang="en", jupyter=False):
         self.df = pages_df
         self.lang = lang
+        self.progress = tqdm.tqdm_notebook if jupyter else tqdm.tqdm
 
     def load(self, chunk_size=50):
         ores_scores = []
-        for idx in tqdm.tqdm(range(0, len(self.df), chunk_size)):
+        for idx in self.progress(range(0, len(self.df), chunk_size)):
             revisions = self.df.iloc[idx:idx+chunk_size]['revision.id'].values
             scores = fetch_ores_score(revisions, self.lang)
             ores_scores.append(scores)
@@ -87,17 +88,18 @@ class PageDataORESLoader(object):
         return pd.merge(self.df, self.scores, left_on='revision.id', right_index=True)
         
 
-def process_dumps(xml_folder_path, output_path):
+def process_dumps(xml_folder_path, output_path, jupyter=False):
     xml_files = [file for file in os.listdir(xml_folder_path) if '.xml' in file]
     print(f"XML Files found: " + ",".join(xml_files))
     for xml_file in xml_files:
         print(f"Processing {xml_file}")
         dump_parser = XMLDumpPageParser()
-        for event, elem in tqdm.tqdm(etree.iterparse(f"{xml_folder_path}/{xml_file}", events=('start', 'end'))):
+        progress = tqdm.tqdm_notebook if jupyter else tqdm.tqdm
+        for event, elem in progress(etree.iterparse(f"{xml_folder_path}/{xml_file}", events=('start', 'end'))):
             dump_parser.handle(event, elem)
         
         pages = pd.DataFrame(dump_parser.get_pages())
-        ores_loader = PageDataORESLoader(pages).load()
+        ores_loader = PageDataORESLoader(pages, jupyter=jupyter).load()
         
         pages_with_scores = ores_loader.get_pages_with_ores()
 
