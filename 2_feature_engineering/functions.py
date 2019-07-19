@@ -1,3 +1,6 @@
+"""Each funcation here extracts some feature from text
+"""
+
 from pyspark.sql import *
 from pyspark.sql.functions import col, lower, regexp_replace, split, size, UserDefinedFunction
 from pyspark.sql.types import StringType, IntegerType
@@ -6,37 +9,8 @@ import re
 
 eps = 1e-8
 
-def rename_columns(df):
-    for c in df.columns:
-        if "revision." in c:
-            df = df.withColumnRenamed(c, c[len("revision."):])
-    return df
-
-def filter_columns(df, print_columns=False):
-    """Columns filtering
-        Useful: sha1 (as identifier),  timestamp, title, text
-        Questionable: user, comment, ip, id (there are different articles with the same id), parentid, restrictions
-        Not useful (no unique info): model, format, ns, contributor, revision, restrictions
-    """
-    ores_weights = {'Stub': 1, 'Start': 2, 'C': 3, 'B': 4, 'GA': 5, 'FA': 6}
-    ores_scores = list(ores_weights.keys())
-    useful_columns = ["sha1", "timestamp", "title", "text"] + ores_scores
-    if print_columns:
-        print("All columns:", df.columns)
-        print("Unique values for..")
-        for column in ["format", "model", "ns", "contributor", "revision", "restrictions"]:
-            print("\t", column, ":", df.select(column).distinct().rdd.map(lambda r: r[0]).collect())
-        print("Useful columns:", useful_columns)
-    return df[useful_columns]
-
 def words_counts(df):
     return df.withColumn('n_words', size(split(col('text'), ' ')))
-
-def single_head_level_count(text, level):
-    assert level in range(2,7)
-    pattern = "=" * level
-    pattern = pattern + "[a-zA-Z0-9.,!? ]+" + pattern
-    return size(split(text, pattern=pattern))-1
 
 def count_headings(df):
     """Headings counting
@@ -47,9 +21,15 @@ def count_headings(df):
         =====Level 5=====
         ======Level 6======
     """
+    def _single_head_level_count(text, level):
+        assert level in range(2,7)
+        pattern = "=" * level
+        pattern = pattern + "[a-zA-Z0-9.,!? ]+" + pattern
+        return size(split(text, pattern=pattern))-1
+        
     return reduce(
         lambda df, level: df.withColumn("level{}".format(level),
-                                        single_head_level_count(col("text"), level)),
+                                        _single_head_level_count(col("text"), level)),
         range(2,7), df)
 
 def citation_counter(citation_source):
