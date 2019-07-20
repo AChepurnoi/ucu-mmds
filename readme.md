@@ -58,13 +58,7 @@ From root project folder run:
 - `python 2_feature_engineering/csv_to_features.py`
 - `python 3_modeling/features_to_clusters.py`
 
-\* If you want to download only subsample edit `load_wiki_data_full.sh`:
-
-Replace: `cat data/dump_names.txt | while read bz_dump_name; do`
-
-with `cat data/dump_names.txt | tail -n -3 | while read bz_dump_name; do`.
-
-(3 can be any number of dumps that you want; also you can use head/tail or any bash filtering here.)
+\* If you want to download only subsample, edit the list of dumps in `data/dump_names.txt`.
 
 #### Test
 See [Test our estimator](#test-our-estimator)
