@@ -1,5 +1,6 @@
-# Diversity of Wikipedia article references (July 2019)
-## Mining Massive Datasets final project (WIP until 22/07/2019)
+*Work In Progress until 22/07/2019*
+# Diversity of Wikipedia Article References
+## Final project of Mining Massive Datasets course, July 2019
 
 Authors:
 
@@ -24,7 +25,24 @@ pip install -r requirements.txt
 ```
 
 ### Test our estimator
-Run `python ./test.py -t "Margaret Hamilton (software engineer)"`
+Run 
+```
+python ./test.py -t {your favourite english Wiki article}
+```
+
+For example
+```
+python ./test.py -t "Principal component analysis"
+```
+will output:
+```
+- the page is well cited and argumented
+- the references distribution:
+  > 55%: scientiﬁc papers
+  > 40%: books
+  > 5%: software documentation
+- this is likely a featured article
+```
 
 ### Train and test on sample data
 Run `Pipeline.ipynb`.
@@ -42,17 +60,11 @@ From root project folder run:
 
 \* If you want to download only subsample edit `load_wiki_data_full.sh`:
 
-Replace:
-```
-cat data/parts.txt | while read bz_dump_name; do
-```
-With:
-```
-# 3 can be any number of dumps that you want. 
-# Also you can use head/tail or any bash filtering here.
+Replace: `cat data/dump_names.txt | while read bz_dump_name; do`
 
-cat data/parts.txt | tail -n -3 | while read bz_dump_name; do
-```
+with `cat data/dump_names.txt | tail -n -3 | while read bz_dump_name; do`.
+
+(3 can be any number of dumps that you want; also you can use head/tail or any bash filtering here.)
 
 #### Test
-Run `python test.py -t "Margaret Hamilton (software engineer)"`
+See [Test our estimator](#test-our-estimator)
