@@ -9,6 +9,16 @@ import re
 
 eps = 1e-8
 
+def tag_article(df):
+    df = df.withColumn('redirect', df.text.rlike('^#REDIRECT'))
+    df = df.withColumn('disambig', df.text.rlike('\{\{(disambig|[a-zA-Z0-9 |]*[dD]isambiguation[|a-zA-Z0-9 ]*)\}\}'))
+    df = df.withColumn('template', df.title.rlike('^Template:'))
+    df = df.withColumn('category', df.title.rlike('^Category:'))
+    df = df.withColumn('file', df.title.rlike('^File:'))
+    df = df.withColumn('wikipedia_related', df.title.rlike('^Wikipedia:'))
+    df = df.withColumn('portal', df.title.rlike('^Portal:'))
+    return df
+
 def words_counts(df):
     return df.withColumn('n_words', size(split(col('text'), ' ')))
 
@@ -90,12 +100,16 @@ def count_paragraphs(df):
     """Paragraphs
     """
     # filter the basic wikipedia syntaxis
-    pattern_filtering = '\n\n\{\{.*\}\}\n\n|\n\n\[\[.*\]\]\n\n|\n\n={1,7}.*={1,7}\n\n'
+    pattern_filterings = ['\n\n\{\{.*\}\}\n\n|\n\n\[\[.*\]\]\n\n|\n\n={1,7}.*={1,7}\n\n',
+                         '\{\{Infobox[^\}]*\}\}',
+                         '==References==\n.*\n\n',
+                         '==External links==\n.*\n\n']
     # split by two enters
     pattern_splitting = '\n\n'
-    return df.withColumn('n_paragraphs', size(split(regexp_replace(col('text'),
-                                                                   pattern_filtering, ''),
-                                                    pattern_splitting))-1)
+    c = col('text')
+    for pattern in pattern_filterings:
+        c = regexp_replace(c, pattern, '')
+    return df.withColumn('n_paragraphs', size(split(c, pattern_splitting))-1)
 
 def count_unreferenced(df):
     """
@@ -125,8 +139,6 @@ def count_of_images(df):
 
 
 def extract_features(df_features, filter=True):
-    df_features = filter_columns(rename_columns(df_features))
-
     df_features = words_counts(df_features)
     df_features = count_headings(df_features)
 
@@ -154,7 +166,7 @@ def extract_features(df_features, filter=True):
     df_features = df_features.withColumn("average_external_links", (col("n_external_links")  / (col("n_paragraphs") + eps)))
 
     df_features = count_unreferenced(df_features)
-    df_features = count_categories(df_features)
+    # df_features = count_categories(df_features)
     df_features = count_of_images(df_features)
 
     if filter:
@@ -164,7 +176,7 @@ def extract_features(df_features, filter=True):
                         'level2', 'level3', 'level4', 'level5', 'level6',
                         'book_citations', 'journal_citations', 'web_citations', 'news_citations',
                         'average_external_links', 'average_internal_links',
-                        'n_paragraphs', 'n_unreferenced', 'n_categories', 'n_images']
+                        'n_paragraphs', 'n_unreferenced', 'n_images']
 
         df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x],
                                                 features_names)))
