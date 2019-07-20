@@ -45,6 +45,12 @@ def filter_columns(df, print_columns=False):
 
 def filter_articles(df):
     df = df.filter(~df.text.rlike('^#REDIRECT'))
+    df = df.filter(~df.text.rlike('\{\{(disambig|[a-zA-Z0-9 |]*[dD]isambiguation[|a-zA-Z0-9 ]*)\}\}'))
+    df = df.filter(~df.title.rlike('^Template:'))
+    df = df.filter(~df.title.rlike('^Category:'))
+    df = df.filter(~df.title.rlike('^File:'))
+    df = df.filter(~df.title.rlike('^Wikipedia:'))
+    df = df.filter(~df.title.rlike('^Portal:'))
     return df
 
 def create_features(csv_dir, date):
