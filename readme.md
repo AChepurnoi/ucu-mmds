@@ -24,7 +24,7 @@ pip install -r requirements.txt
 ```
 
 ### Test our estimator
-Run `./test.py -t "Margaret Hamilton (software engineer)"`
+Run `python ./test.py -t "Margaret Hamilton (software engineer)"`
 
 ### Train and test on sample data
 Run `Pipeline.ipynb`.
@@ -36,10 +36,9 @@ The notebook represents all the pipeline stages with a small wiki dump. It alloc
 From root project folder run:
 
 - `./load_wiki_data_full.sh` (loads full [2019-07-01 Wikipedia](https://dumps.wikimedia.org/enwiki/20190701/) data * )
-- `./1_data_collection/xml_to_csv.py`
-- `./2_feature_engineering/create_features.py`
-- `./3_modeling/trainer.py`
-- `./4_evaluation/evaluator.py`
+- `python 1_data_collection/xml_to_csv.py`
+- `python 2_feature_engineering/csv_to_features.py`
+- `python 3_modeling/features_to_clusters.py`
 
 \* If you want to download only subsample edit `load_wiki_data_full.sh`:
 
@@ -56,4 +55,4 @@ cat data/parts.txt | tail -n -3 | while read bz_dump_name; do
 ```
 
 #### Test
-Run `./test.py -t "Margaret Hamilton (software engineer)"`
+Run `python test.py -t "Margaret Hamilton (software engineer)"`

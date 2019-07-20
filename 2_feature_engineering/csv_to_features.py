@@ -44,29 +44,36 @@ def filter_columns(df, print_columns=False):
     return df[useful_columns]
 
 def filter_articles(df):
-    df = df.filter(~df.text.rlike('^#REDIRECT'))
-    df = df.filter(~df.text.rlike('\{\{(disambig|[a-zA-Z0-9 |]*[dD]isambiguation[|a-zA-Z0-9 ]*)\}\}'))
-    df = df.filter(~df.title.rlike('^Template:'))
-    df = df.filter(~df.title.rlike('^Category:'))
-    df = df.filter(~df.title.rlike('^File:'))
-    df = df.filter(~df.title.rlike('^Wikipedia:'))
-    df = df.filter(~df.title.rlike('^Portal:'))
+    df = df.filter(~lower(df.text).rlike('^#redirect'))
+    df = df.filter(~lower(df.text).rlike('\{\{(disambig|[a-z0-9 |]*disambiguation[|a-z0-9 ]*)\}\}'))
+    df = df.filter(~lower(df.title).rlike('^template:'))
+    df = df.filter(~lower(df.title).rlike('^category:'))
+    df = df.filter(~lower(df.title).rlike('^file:'))
+    df = df.filter(~lower(df.title).rlike('^wikipedia:'))
+    df = df.filter(~lower(df.title).rlike('^portal:'))
+    df = df.filter(~lower(df.title).rlike('^help:'))
     return df
 
-def create_features(csv_dir, date):
+def create_features(csv_dir, date, debug=False, lim=None):
     df_paths = glob(os.path.join(csv_dir, "enwiki-{}-pages-articles-multistream*_raw.csv".format(date)))
-    df_out_path = os.path.join(csv_dir, "enwiki-{}-features.csv".format(date))
     
     df = read_df(df_paths)
     df_features = filter_columns(df)
     df_features = filter_articles(df_features)
-    df_features = extract_features(df_features)
+    if lim is not None:
+        df_features = df_features.limit(lim)
+        df_out_path = os.path.join(csv_dir, "enwiki-{}-features-small.csv".format(date))
+    else:
+        df_out_path = os.path.join(csv_dir, "enwiki-{}-features.csv".format(date))
+
+    df_features = extract_features(df_features, debug=debug)
 
     df_features.printSchema()
-    print("Size of the DataFrame: {} records".format(df_features.count()))
-    df_features.toPandas().to_csv(df_out_path)
+    pdf_features = df_features.toPandas()
+    print("Size of the DataFrame: {} records".format(len(pdf_features)))
+    pdf_features.to_csv(df_out_path)
     print("Features saved to {}".format(df_out_path))
-    return df_features
+    return df_features, pdf_features
 
 if __name__ == "__main__":
 

@@ -2,7 +2,7 @@
 """
 
 from pyspark.sql import *
-from pyspark.sql.functions import col, lower, regexp_replace, split, size, UserDefinedFunction
+from pyspark.sql.functions import col, lower, regexp_replace, split, array_remove, size, UserDefinedFunction
 from pyspark.sql.types import StringType, IntegerType
 from functools import reduce
 import re
@@ -10,13 +10,14 @@ import re
 eps = 1e-8
 
 def tag_article(df):
-    df = df.withColumn('redirect', df.text.rlike('^#REDIRECT'))
-    df = df.withColumn('disambig', df.text.rlike('\{\{(disambig|[a-zA-Z0-9 |]*[dD]isambiguation[|a-zA-Z0-9 ]*)\}\}'))
-    df = df.withColumn('template', df.title.rlike('^Template:'))
-    df = df.withColumn('category', df.title.rlike('^Category:'))
-    df = df.withColumn('file', df.title.rlike('^File:'))
-    df = df.withColumn('wikipedia_related', df.title.rlike('^Wikipedia:'))
-    df = df.withColumn('portal', df.title.rlike('^Portal:'))
+    df = df.withColumn('redirect', lower(df.text).rlike('^#redirect'))
+    df = df.withColumn('disambig', lower(df.text).rlike('\{\{(disambig|[a-z0-9 |]*disambiguation[|a-z0-9 ]*)\}\}'))
+    df = df.withColumn('template', lower(df.title).rlike('^template:'))
+    df = df.withColumn('category', lower(df.title).rlike('^category:'))
+    df = df.withColumn('file', lower(df.title).rlike('^file:'))
+    df = df.withColumn('wikipedia_related', lower(df.title).rlike('^wikipedia:'))
+    df = df.withColumn('portal', lower(df.title).rlike('^portal:'))
+    df = df.withColumn('help', lower(df.title).rlike('^help:'))
     return df
 
 def words_counts(df):
@@ -34,7 +35,7 @@ def count_headings(df):
     def _single_head_level_count(text, level):
         assert level in range(2,7)
         pattern = "=" * level
-        pattern = pattern + "[a-zA-Z0-9.,!? ]+" + pattern
+        pattern = pattern + "(?!.*[Ll]inks)(?!References)[a-zA-Z0-9.,!? ]+" + pattern
         return size(split(text, pattern=pattern))-1
         
     return reduce(
@@ -99,17 +100,22 @@ def count_external_links(df):
 def count_paragraphs(df):
     """Paragraphs
     """
-    # filter the basic wikipedia syntaxis
-    pattern_filterings = ['\n\n\{\{.*\}\}\n\n|\n\n\[\[.*\]\]\n\n|\n\n={1,7}.*={1,7}\n\n',
-                         '\{\{Infobox[^\}]*\}\}',
-                         '==References==\n.*\n\n',
-                         '==External links==\n.*\n\n']
-    # split by two enters
-    pattern_splitting = '\n\n'
+    pattern_filterings = [
+                          '\n\n+(\{\{[^\}]*\}\}|\[\[[^\]]*\]\]|={1,7}.*={1,7})\n\n+',
+                          '==References==[\s\S]*',
+                          '==External [lL]inks==[\s\S]*',
+                          '\{\{([^\{\}]*(\{\{.*\}\})*)*\}\}\n+',
+                          '\{\{([^\{\}]*(\{\{.*\}\})*)*\}\}$',
+                          '\[\[[^\]]*\]\]\n+',
+                          '\[\[[^\]]*\]\]$',
+                          '\n\n+'
+                         ]
     c = col('text')
     for pattern in pattern_filterings:
-        c = regexp_replace(c, pattern, '')
-    return df.withColumn('n_paragraphs', size(split(c, pattern_splitting))-1)
+        c = regexp_replace(c, pattern, '\n\n')
+    splitted = array_remove(split(c, '\n\n'), '')
+    # return df.withColumn('paragraphs', splitted).withColumn('n_paragraphs', size(splitted))
+    return df.withColumn('n_paragraphs', size(splitted)-1)
 
 def count_unreferenced(df):
     """
@@ -138,25 +144,22 @@ def count_of_images(df):
     return df.withColumn("n_images", size(split(col('text'), pattern=pattern))-1)
 
 
-def extract_features(df_features, filter=True):
+def extract_features(df_features, filter=True, debug=False):
+    if debug:
+        df_features = df_features.limit(50)
+
     df_features = words_counts(df_features)
     df_features = count_headings(df_features)
 
-    # citation counter ver1
     book_citations_count = UserDefinedFunction(citation_counter("book"), IntegerType())
     journal_citations_count = UserDefinedFunction(citation_counter("journal"), IntegerType())
     web_citations_count = UserDefinedFunction(citation_counter("web"), IntegerType())
     news_citations_count = UserDefinedFunction(citation_counter("news"), IntegerType())
-
     df_features = df_features\
                     .withColumn("book_citations", book_citations_count("text"))\
                     .withColumn("journal_citations", journal_citations_count("text"))\
                     .withColumn("web_citations", web_citations_count("text"))\
                     .withColumn("news_citations", news_citations_count("text"))
-
-    # citation counter ver2
-    # df_features = citation_counter2("book")(df_features)
-    # df_features = citation_counter2("journal")(df_features)
 
     df_features = count_internal_links(df_features)
     df_features = count_external_links(df_features)
@@ -166,22 +169,22 @@ def extract_features(df_features, filter=True):
     df_features = df_features.withColumn("average_external_links", (col("n_external_links")  / (col("n_paragraphs") + eps)))
 
     df_features = count_unreferenced(df_features)
-    # df_features = count_categories(df_features)
     df_features = count_of_images(df_features)
 
-    if filter:
-        features_names = ['title',
-                        'Stub', 'Start', 'C', 'B', 'GA', 'FA',
-                        'n_words', 'n_internal_links', 'n_external_links',
-                        'level2', 'level3', 'level4', 'level5', 'level6',
-                        'book_citations', 'journal_citations', 'web_citations', 'news_citations',
-                        'average_external_links', 'average_internal_links',
-                        'n_paragraphs', 'n_unreferenced', 'n_images']
+    if not debug:
+        if filter:
+            features_names = ['title',
+                            'Stub', 'Start', 'C', 'B', 'GA', 'FA',
+                            'n_words', 'n_internal_links', 'n_external_links',
+                            'level2', 'level3', 'level4', 'level5', 'level6',
+                            'book_citations', 'journal_citations', 'web_citations', 'news_citations',
+                            'average_external_links', 'average_internal_links',
+                            'n_paragraphs', 'n_unreferenced', 'n_images']
 
-        df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x],
-                                                features_names)))
+            df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x],
+                                                    features_names)))
 
-        for feature in features_names:
-            df_features = df_features.filter(df_features[feature].isNotNull())
+            for feature in features_names:
+                df_features = df_features.filter(df_features[feature].isNotNull())
 
     return df_features
