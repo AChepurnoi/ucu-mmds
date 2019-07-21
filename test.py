@@ -1,6 +1,6 @@
 import os
 import argparse
-
+import sys
 import findspark
 try:
     findspark.init()
@@ -66,7 +66,7 @@ def get_ores_score(revision_id, lang="en"):
         return scores
     except Exception as e:
         print(f"Alert: Exception fetching ORES score for revision. Ex: {e}")
-        return pd.DataFrame(np.nan, index=revision_ids, columns=['B', 'C', 'FA', 'GA', 'Start', 'Stub'])
+        return None
 
 def get_features(ores_scores, text, title):
     # title formatting
@@ -148,6 +148,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     text = get_raw_article(args.title)
+    if text == None:
+        sys.exit()
+
     revision_id = get_revision_id(args.title)
     ores_score = get_ores_score(revision_id)
     pandas_features = get_features(ores_score, text, args.title)
