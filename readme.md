@@ -1,4 +1,3 @@
-*Work In Progress until 22/07/2019*
 # Diversity of Wikipedia Article References
 ## Final project of Mining Massive Datasets course, July 2019
 
@@ -11,8 +10,17 @@ Authors:
 
 ## Project Description
 
+The **diversity of resources and content** matters. When people are obtaining new knowledge, they don't want to be fooled with fake news or believe in information without proof from other authorized source. Sometimes Wikipedia articles may have poorly filled or unreferenced information, so, in the era of exponential data growth and post-truth, there is a huge need in automatic detection of articles with deficit of sources.
 
-See our report in `Report.ipynb`.
+Our solution may help **readers** — to be more confident or sceptic about the information gained, as well as **editors** — such that they concentrate on the most important gaps of the article.
+
+Moreover, noteworthy that there exist differences in the same article across different languages, that can be detected with our solution and fixed.
+
+Our **problem statement** is to estimate the quality of the article, based on the references, in an unsupervised way. Unite and check the results of our modeling with results from ORES model.
+
+<img src="assets/clusters_w.png"/>
+
+See our full report in `Report.ipynb`.
 
 ## Project Pipeline
 
@@ -50,6 +58,8 @@ Run `Pipeline.ipynb`.
 The notebook represents all the pipeline stages with a small wiki dump. It allocates about 50MB of memory. All the data is written in `sample_data` directory. 
 
 ### Run full pipeline
+
+<img src="assets/pipeline_w.png"/>
 
 #### Train
 From root project folder run:
