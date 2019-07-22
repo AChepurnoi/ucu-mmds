@@ -55,8 +55,8 @@ The notebook represents all the pipeline stages with a small wiki dump. It alloc
 From root project folder run:
 
 - `./load_wiki_data_full.sh` (loads full [2019-07-01 Wikipedia](https://dumps.wikimedia.org/enwiki/20190701/) data * )
-- `python 1_data_collection/xml_to_csv.py` (parses XML to CSV with streaming XML parser; fetches ORES assessments)
-- `python 2_feature_engineering/csv_to_features.py` (filters articles; transfroms to features)
+- `python 1_data_collection/xml_to_csv.py --ores` (parses XML to CSV with streaming XML parser; fetches ORES assessments)
+- `python 2_feature_engineering/csv_to_features.py --ores` (filters articles; transfroms to features)
 - `python 3_modeling/features_to_clusters.py` (clusters the data using features; evaluates ans saves the model for testing)
 
 \* If you want to download only subsample, edit the list of dumps in `data/dump_names.txt`.

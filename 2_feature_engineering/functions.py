@@ -142,9 +142,15 @@ def count_of_images(df):
     any_text = "[a-zA-Z0-9.,!? ]+ \] "
     pattern = "\[[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\|[a-zA-Z0-9.,!? ]+\]"
     return df.withColumn("n_images", size(split(col('text'), pattern=pattern))-1)
+            
+def has_column(df, col):
+    try:
+        df[col]
+        return True
+    except AnalysisException:
+        return False
 
-
-def extract_features(df_features, filter=True, debug=False):
+def extract_features(df_features, filter=True, debug=False, ores=True):
     if debug:
         df_features = df_features.limit(50)
 
@@ -173,13 +179,15 @@ def extract_features(df_features, filter=True, debug=False):
 
     if not debug:
         if filter:
+            labels = ['Stub', 'Start', 'C', 'B', 'GA', 'FA'] if ores else []
+            tags = ["redirect", "disambig", "template", "category", "file", "wikipedia_related", "portal", "help"] \
+                   if has_column(df_features, "redirect") else [] 
             features_names = ['title',
-                            'Stub', 'Start', 'C', 'B', 'GA', 'FA',
                             'n_words', 'n_internal_links', 'n_external_links',
                             'level2', 'level3', 'level4', 'level5', 'level6',
                             'book_citations', 'journal_citations', 'web_citations', 'news_citations',
                             'average_external_links', 'average_internal_links',
-                            'n_paragraphs', 'n_unreferenced', 'n_images']
+                            'n_paragraphs', 'n_unreferenced', 'n_images'] + labels + tags
 
             df_features = df_features.select(list(map(lambda x: df_features[x].cast('double') if x != 'title' else df_features[x],
                                                     features_names)))

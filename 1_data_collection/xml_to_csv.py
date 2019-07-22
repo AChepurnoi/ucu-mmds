@@ -88,7 +88,7 @@ class PageDataORESLoader(object):
         return pd.merge(self.df, self.scores, left_on='revision.id', right_index=True)
         
 
-def process_dumps(xml_folder_path, output_path, jupyter=False):
+def process_dumps(xml_folder_path, output_path, jupyter=False, ores=True):
     xml_files = [file for file in os.listdir(xml_folder_path) if '.xml' in file]
     print(f"XML Files found: " + ",".join(xml_files))
     for xml_file in xml_files:
@@ -99,12 +99,12 @@ def process_dumps(xml_folder_path, output_path, jupyter=False):
             dump_parser.handle(event, elem)
         
         pages = pd.DataFrame(dump_parser.get_pages())
-        ores_loader = PageDataORESLoader(pages, jupyter=jupyter).load()
-        
-        pages_with_scores = ores_loader.get_pages_with_ores()
-
-        output_file = xml_file.split('.')[0] + "_raw.csv"
-        pages_with_scores.to_csv(f"{output_path}/{output_file}")
+        if ores:
+            ores_loader = PageDataORESLoader(pages, jupyter=jupyter).load()
+            pages = ores_loader.get_pages_with_ores()
+            
+        output_file = '_'.join(xml_file.split('.')) + "_raw.csv"
+        pages.to_csv(f"{output_path}/{output_file}")
 
 
 if __name__ == "__main__":
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--xml-dir", type=str, default=XML_DIR)
     parser.add_argument("--csv-dir", type=str, default=CSV_DIR)
+    parser.add_argument("--ores", action='store_true', default=False)
     args = parser.parse_args()
     
-    process_dumps(args.xml_dir, args.csv_dir)
+    process_dumps(args.xml_dir, args.csv_dir, ores=args.ores)

@@ -18,7 +18,7 @@ stages = ["1_data_collection", "2_feature_engineering", "3_modeling", "4_evaluat
 for stage in stages:
     sys.path.insert(0, stage)
 
-from functions import extract_features
+from functions import tag_article, extract_features
 
 import bs4
 import requests
@@ -79,6 +79,7 @@ def get_features(ores_scores, text, title):
     pandas_df = pd.DataFrame.from_records([ores_scores])
     # convert to pyspark dataframe
     df = spark.createDataFrame(pandas_df.astype(str))
+    df = tag_article(df)
     pyspark_features = extract_features(df, filter=True, debug=False)
     pdf = pyspark_features.toPandas()
     # get pandas data
@@ -115,12 +116,23 @@ references_to_descr = {
     3: 'media materials (prints)'
 }
 
-def formatted_output(pandas_features):
+tag_to_descr = {
+    "redirect": "It's a redirecting page. Please make another request: ",
+    "disambig": "It's a disambiguation. Please specify the request: ",
+    "template": "It's a template. Please make another request: ",
+    "category": "It's a category page. Please make another request: ",
+    "file": "It's a file. Please make another request: ",
+    "wikipedia_related": "It's a wikipedia project page. Please make another request: ",
+    "portal": "It's a portal. Please make another request: ",
+    "help": "It's a help page. Please make another request: "
+}
 
+def formatted_output(pandas_features):
+    if pandas_features[tag_to_descr.keys()].any(axis=1).iloc[0]:
+        new_title = input(tag_to_descr[pandas_features[tag_to_descr.keys()].idxmax(axis=1).iloc[0]])
+        test_article(new_title)
+        return
     output = ''
-    #output = '{clustering_output}\n'
-    # add clustering ...
-    # use clusters_to_desct template
 
     # compute references distribution and create template
     references = ['book_citations',
@@ -150,7 +162,8 @@ def test_article(title):
     ores_score = get_ores_score(revision_id)
     pandas_features = get_features(ores_score, text, title)
     output = formatted_output(pandas_features)
-    print(output)
+    if output is not None:
+        print(output)
 
 if __name__ == "__main__":
 

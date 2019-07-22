@@ -26,14 +26,14 @@ def rename_columns(df):
             df = df.withColumnRenamed(c, c[len("revision."):])
     return df
 
-def filter_columns(df, print_columns=False):
+def filter_columns(df, print_columns=False, ores=False):
     """Columns filtering
         Useful: title (as identifier), text
         Questionable: user, comment, ip, id (there are different articles with the same id), parentid, restrictions, timestamp, sha1
         Not useful (no unique info): model, format, ns, contributor, revision, restrictions
     """
     ores_weights = {'Stub': 1, 'Start': 2, 'C': 3, 'B': 4, 'GA': 5, 'FA': 6}
-    ores_scores = list(ores_weights.keys())
+    ores_scores = list(ores_weights.keys()) if ores else []
     useful_columns = ["title", "text"] + ores_scores
     if print_columns:
         print("All columns:", df.columns)
@@ -54,11 +54,11 @@ def filter_articles(df):
     df = df.filter(~lower(df.title).rlike('^help:'))
     return df
 
-def create_features(csv_dir, date, debug=False, lim=None, save=True):
+def create_features(csv_dir, date, debug=False, lim=None, save=True, ores=True):
     df_paths = glob(os.path.join(csv_dir, "enwiki-{}-pages-articles-multistream*_raw.csv".format(date)))
-    
+    print('CSV files found:', df_paths)
     df = read_df(df_paths)
-    df_features = filter_columns(df)
+    df_features = filter_columns(df, ores=ores)
     df_features = filter_articles(df_features)
     if lim is not None:
         df_features = df_features.limit(lim)
@@ -66,7 +66,7 @@ def create_features(csv_dir, date, debug=False, lim=None, save=True):
     else:
         df_out_path = os.path.join(csv_dir, "enwiki-{}-features.csv".format(date))
 
-    df_features = extract_features(df_features, debug=debug)
+    df_features = extract_features(df_features, debug=debug, ores=ores)
 
     if save:
         df_features.printSchema()
@@ -80,13 +80,14 @@ def create_features(csv_dir, date, debug=False, lim=None, save=True):
 
 if __name__ == "__main__":
 
-    CSV_DIR = "../data/csv"
+    CSV_DIR = "data/csv"
     DATE = "20190701"
 
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--csv-dir", type=str, default=CSV_DIR)
     parser.add_argument("--date", type=str, default=DATE)
+    parser.add_argument("--ores", action='store_true', default=False)
     args = parser.parse_args()
 
-    create_features(args.csv_dir, args.date)
+    create_features(args.csv_dir, args.date, ores=args.ores)
