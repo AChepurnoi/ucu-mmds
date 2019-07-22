@@ -141,18 +141,21 @@ def formatted_output(pandas_features):
 
     return output
 
+def test_article(title):
+    text = get_raw_article(title)
+    if text == None:
+        sys.exit()
+
+    revision_id = get_revision_id(title)
+    ores_score = get_ores_score(revision_id)
+    pandas_features = get_features(ores_score, text, title)
+    output = formatted_output(pandas_features)
+    print(output)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--title", type=str, required=True)
     args = parser.parse_args()
 
-    text = get_raw_article(args.title)
-    if text == None:
-        sys.exit()
-
-    revision_id = get_revision_id(args.title)
-    ores_score = get_ores_score(revision_id)
-    pandas_features = get_features(ores_score, text, args.title)
-    output = formatted_output(pandas_features)
-    print(output)
+    test_article(args.title)
