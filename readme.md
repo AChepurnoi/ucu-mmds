@@ -27,20 +27,21 @@ pip install -r requirements.txt
 ### Test our estimator
 Run 
 ```
-python ./test.py -t {your favourite english Wiki article}
+python ./test.py -t {your favourite english Wiki article} 2> /dev/null
 ```
 
 For example
 ```
-python ./test.py -t "Principal component analysis"
+python test.py -t "Principal component analysis" 2> /dev/null
 ```
 will output:
 ```
-- the page is well cited and argumented
 - the references distribution:
-  > 55%: scientiﬁc papers
-  > 40%: books
-  > 5%: software documentation
+  >   76% scientific papers (journals, publications, etc)
+  >   12% books
+  >   12% internet resources (news, archive, etc)
+  >    0% media materials (prints)
+- this article has a good amount of content and references
 - this is likely a featured article
 ```
 

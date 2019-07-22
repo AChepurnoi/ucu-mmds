@@ -54,7 +54,7 @@ def filter_articles(df):
     df = df.filter(~lower(df.title).rlike('^help:'))
     return df
 
-def create_features(csv_dir, date, debug=False, lim=None):
+def create_features(csv_dir, date, debug=False, lim=None, save=True):
     df_paths = glob(os.path.join(csv_dir, "enwiki-{}-pages-articles-multistream*_raw.csv".format(date)))
     
     df = read_df(df_paths)
@@ -68,12 +68,15 @@ def create_features(csv_dir, date, debug=False, lim=None):
 
     df_features = extract_features(df_features, debug=debug)
 
-    df_features.printSchema()
-    pdf_features = df_features.toPandas()
-    print("Size of the DataFrame: {} records".format(len(pdf_features)))
-    pdf_features.to_csv(df_out_path)
-    print("Features saved to {}".format(df_out_path))
-    return df_features, pdf_features
+    if save:
+        df_features.printSchema()
+        pdf_features = df_features.toPandas()
+        print("Size of the DataFrame: {} records".format(len(pdf_features)))
+        pdf_features.to_csv(df_out_path)
+        print("Features saved to {}".format(df_out_path))
+        return df_features, pdf_features
+    else:
+        return df_features
 
 if __name__ == "__main__":
 
