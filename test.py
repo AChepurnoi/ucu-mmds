@@ -118,7 +118,7 @@ references_to_descr = {
 
 tag_to_descr = {
     "redirect": "It's a redirecting page. Please make another request: ",
-    "disambig": "It's a disambiguation. Please specify the request: ",
+    "disambig": "It's a disambiguation page. Please specify the request: ",
     "template": "It's a template. Please make another request: ",
     "category": "It's a category page. Please make another request: ",
     "file": "It's a file. Please make another request: ",

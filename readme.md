@@ -35,12 +35,12 @@ pip install -r requirements.txt
 ### Test our estimator
 Run 
 ```
-python ./test.py -t {your favourite english Wiki article} 2> /dev/null
+python ./test.py -t {your favourite english Wiki article}
 ```
 
 For example
 ```
-python test.py -t "Principal component analysis" 2> /dev/null
+python test.py -t "Principal component analysis"
 ```
 will output:
 ```
